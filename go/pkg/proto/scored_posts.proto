@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package scoredposts;
+
+option go_package = "github.com/x-algorithm/go/pkg/proto";
+
+// ScoredPostsService 提供推荐帖子服务
+service ScoredPostsService {
+  // GetScoredPosts 获取排序后的帖子列表
+  rpc GetScoredPosts(ScoredPostsQuery) returns (ScoredPostsResponse);
+}
+
+// ScoredPostsQuery 表示推荐请求
+message ScoredPostsQuery {
+  int64 viewer_id = 1;                    // 用户 ID
+  int32 client_app_id = 2;                // 客户端应用 ID
+  string country_code = 3;                 // 国家代码
+  string language_code = 4;                // 语言代码
+  repeated int64 seen_ids = 5;            // 已看过的帖子 ID 列表
+  repeated int64 served_ids = 6;          // 本次会话已服务的帖子 ID 列表
+  bool in_network_only = 7;                // 是否只要站内内容
+  bool is_bottom_request = 8;              // 是否是底部请求（用于分页）
+  repeated BloomFilterEntry bloom_filter_entries = 9; // 布隆过滤器条目（用于去重）
+}
+
+// BloomFilterEntry 表示布隆过滤器条目
+message BloomFilterEntry {
+  // 根据实际需求定义字段
+  // 这里先定义基本结构
+  bytes data = 1;
+}
+
+// ScoredPostsResponse 表示推荐响应
+message ScoredPostsResponse {
+  repeated ScoredPost scored_posts = 1;    // 排序后的帖子列表
+}
+
+// ScoredPost 表示一个排序后的帖子
+message ScoredPost {
+  uint64 tweet_id = 1;                      // 帖子 ID
+  uint64 author_id = 2;                    // 作者 ID
+  uint64 retweeted_tweet_id = 3;           // 转发的原帖 ID（如果是转发）
+  uint64 retweeted_user_id = 4;            // 转发的原帖作者 ID
+  uint64 in_reply_to_tweet_id = 5;         // 回复的帖子 ID（如果是回复）
+  float score = 6;                         // 最终分数
+  bool in_network = 7;                     // 是否站内内容
+  int32 served_type = 8;                   // 服务类型
+  uint64 last_scored_timestamp_ms = 9;     // 最后打分时间戳（毫秒）
+  uint64 prediction_request_id = 10;        // 预测请求 ID
+  repeated uint64 ancestors = 11;           // 祖先帖子 ID 列表
+  map<uint64, string> screen_names = 12;   // 用户名映射（author_id -> screen_name）
+  string visibility_reason = 13;            // 可见性原因（如果被过滤）
+}

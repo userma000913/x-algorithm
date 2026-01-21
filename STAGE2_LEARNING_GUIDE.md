@@ -26,37 +26,69 @@
 
 **关键代码**：
 
-```rust
-pub struct HomeMixerServer {
-    phx_candidate_pipeline: Arc<PhoenixCandidatePipeline>,
+```go
+// 示例：Go gRPC 服务入口（等价于 Rust 的 server.rs 入口逻辑）
+//
+// 说明：
+// - 这里假设你已经用 protobuf 生成了 pb 包
+// - pipeline.Execute(ctx, query) 返回 pipelineResult
+// - 这是“结构示例”，方便你看懂数据流（不是可直接运行的完整工程）
+
+type HomeMixerServer struct {
+	pb.UnimplementedScoredPostsServiceServer
+	pipeline *PhoenixCandidatePipeline
 }
 
-#[tonic::async_trait]
-impl pb::scored_posts_service_server::ScoredPostsService for HomeMixerServer {
-    async fn get_scored_posts(
-        &self,
-        request: Request<pb::ScoredPostsQuery>,
-    ) -> Result<Response<ScoredPostsResponse>, Status> {
-        // 1. 解析请求
-        let proto_query = request.into_inner();
-        
-        // 2. 验证参数
-        if proto_query.viewer_id == 0 {
-            return Err(Status::invalid_argument("viewer_id must be specified"));
-        }
-        
-        // 3. 构建查询对象
-        let query = ScoredPostsQuery::new(...);
-        
-        // 4. 执行管道
-        let pipeline_result = self.phx_candidate_pipeline.execute(query).await;
-        
-        // 5. 转换为响应格式
-        let scored_posts: Vec<ScoredPost> = ...;
-        
-        // 6. 返回结果
-        Ok(Response::new(ScoredPostsResponse { scored_posts }))
-    }
+func (s *HomeMixerServer) GetScoredPosts(
+	ctx context.Context,
+	req *pb.ScoredPostsQuery,
+) (*pb.ScoredPostsResponse, error) {
+	// 1) 参数校验
+	if req.GetViewerId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "viewer_id must be specified")
+	}
+
+	// 2) 构建内部 Query（等价于 ScoredPostsQuery::new(...)）
+	query := NewScoredPostsQuery(
+		req.GetViewerId(),
+		req.GetClientAppId(),
+		req.GetCountryCode(),
+		req.GetLanguageCode(),
+		req.GetSeenIds(),
+		req.GetServedIds(),
+		req.GetInNetworkOnly(),
+		req.GetIsBottomRequest(),
+		req.GetBloomFilterEntries(),
+	)
+
+	// 3) 执行候选管道（等价于 self.phx_candidate_pipeline.execute(query).await）
+	pipelineResult, err := s.pipeline.Execute(ctx, query)
+	if err != nil {
+		// 这里你可以根据错误类型决定返回 codes.Internal / codes.DeadlineExceeded 等
+		return nil, status.Errorf(codes.Internal, "pipeline execute failed: %v", err)
+	}
+
+	// 4) 转换为响应格式
+	scoredPosts := make([]*pb.ScoredPost, 0, len(pipelineResult.SelectedCandidates))
+	for _, c := range pipelineResult.SelectedCandidates {
+		scoredPosts = append(scoredPosts, &pb.ScoredPost{
+			TweetId:               uint64(c.TweetID),
+			AuthorId:              uint64(c.AuthorID),
+			RetweetedTweetId:      uint64(ptrOrZero(c.RetweetedTweetID)),
+			RetweetedUserId:       uint64(ptrOrZero(c.RetweetedUserID)),
+			InReplyToTweetId:      uint64(ptrOrZero(c.InReplyToTweetID)),
+			Score:                 float32(floatOrZero(c.Score)),
+			InNetwork:             boolOrFalse(c.InNetwork),
+			ServedType:            int32(intOrZero(c.ServedType)),
+			LastScoredTimestampMs: uint64(ptrOrZero(c.LastScoredAtMs)),
+			PredictionRequestId:   uint64(ptrOrZero(c.PredictionRequestID)),
+			Ancestors:             toU64Slice(c.Ancestors),
+			ScreenNames:           c.ScreenNames,
+			VisibilityReason:      c.VisibilityReason,
+		})
+	}
+
+	return &pb.ScoredPostsResponse{ScoredPosts: scoredPosts}, nil
 }
 ```
 
@@ -76,6 +108,49 @@ impl pb::scored_posts_service_server::ScoredPostsService for HomeMixerServer {
 **输出**：`ScoredPostsResponse`
 - `scored_posts`：排序后的帖子列表
 
+### 1.2.1（补充）Go 示例里用到的“占位辅助函数”
+
+上面的 Go 代码为了表达“字段可能为空（类似 Rust 的 `Option<T>`）”，用了几种占位函数。你实现自己的项目时，可以用更规范的方式（比如 protobuf 的 `optional` 字段，或自己定义 `NullXXX` 类型）。这里给一个**最简可读**的写法：
+
+```go
+func ptrOrZero[T ~int64 | ~uint64](p *T) T {
+	if p == nil {
+		var z T
+		return z
+	}
+	return *p
+}
+
+func floatOrZero(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func boolOrFalse(p *bool) bool {
+	if p == nil {
+		return false
+	}
+	return *p
+}
+
+func intOrZero(p *int32) int32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func toU64Slice(xs []int64) []uint64 {
+	out := make([]uint64, 0, len(xs))
+	for _, x := range xs {
+		out = append(out, uint64(x))
+	}
+	return out
+}
+```
+
 ### 1.3 任务清单
 
 - [ ] 阅读 `home-mixer/server.rs`
@@ -94,43 +169,48 @@ impl pb::scored_posts_service_server::ScoredPostsService for HomeMixerServer {
 
 **核心方法**：`execute`
 
-```rust
-async fn execute(&self, query: Q) -> PipelineResult<Q, C> {
-    // 1. Query Hydration（查询增强）
-    let hydrated_query = self.hydrate_query(query).await;
-    
-    // 2. Candidate Sourcing（候选获取）
-    let candidates = self.fetch_candidates(&hydrated_query).await;
-    
-    // 3. Candidate Hydration（候选增强）
-    let hydrated_candidates = self.hydrate(&hydrated_query, candidates).await;
-    
-    // 4. Pre-Scoring Filtering（打分前过滤）
-    let (kept_candidates, mut filtered_candidates) = 
-        self.filter(&hydrated_query, hydrated_candidates.clone()).await;
-    
-    // 5. Scoring（打分）
-    let scored_candidates = self.score(&hydrated_query, kept_candidates).await;
-    
-    // 6. Selection（选择）
-    let selected_candidates = self.select(&hydrated_query, scored_candidates);
-    
-    // 7. Post-Selection Hydration（选择后增强）
-    let post_selection_hydrated_candidates = 
-        self.hydrate_post_selection(&hydrated_query, selected_candidates).await;
-    
-    // 8. Post-Selection Filtering（选择后过滤）
-    let (mut final_candidates, post_selection_filtered_candidates) = 
-        self.filter_post_selection(&hydrated_query, post_selection_hydrated_candidates).await;
-    
-    // 9. 截断到结果大小
-    final_candidates.truncate(self.result_size());
-    
-    // 10. Side Effects（副作用）
-    self.run_side_effects(input);
-    
-    // 11. 返回结果
-    PipelineResult { ... }
+```go
+// Go 版 Pipeline.Execute（等价于 Rust 的 candidate_pipeline.rs::execute）
+func (p *CandidatePipeline) Execute(ctx context.Context, query *Query) (*PipelineResult, error) {
+	// 1) Query Hydration（并行）
+	hydratedQuery := p.hydrateQuery(ctx, query)
+
+	// 2) Candidate Sourcing（并行）
+	candidates := p.fetchCandidates(ctx, hydratedQuery)
+
+	// 3) Candidate Hydration（并行）
+	hydratedCandidates := p.hydrateCandidates(ctx, hydratedQuery, candidates)
+
+	// 4) Pre-Scoring Filtering（顺序）
+	keptCandidates, filteredCandidates := p.filterCandidates(ctx, hydratedQuery, hydratedCandidates)
+
+	// 5) Scoring（顺序）
+	scoredCandidates := p.scoreCandidates(ctx, hydratedQuery, keptCandidates)
+
+	// 6) Selection（排序/截断）
+	selectedCandidates := p.selector.Select(ctx, hydratedQuery, scoredCandidates)
+
+	// 7) Post-Selection Hydration（并行）
+	postHydrated := p.hydratePostSelection(ctx, hydratedQuery, selectedCandidates)
+
+	// 8) Post-Selection Filtering（顺序）
+	finalCandidates, postFiltered := p.filterPostSelection(ctx, hydratedQuery, postHydrated)
+	filteredCandidates = append(filteredCandidates, postFiltered...)
+
+	// 9) 截断到结果大小
+	if p.resultSize > 0 && len(finalCandidates) > p.resultSize {
+		finalCandidates = finalCandidates[:p.resultSize]
+	}
+
+	// 10) Side Effects（异步，不阻塞主链路）
+	go p.runSideEffects(context.WithoutCancel(ctx), hydratedQuery, finalCandidates)
+
+	return &PipelineResult{
+		RetrievedCandidates: hydratedCandidates,
+		FilteredCandidates:  filteredCandidates,
+		SelectedCandidates:  finalCandidates,
+		Query:               hydratedQuery,
+	}, nil
 }
 ```
 
@@ -191,18 +271,48 @@ Vec<PostCandidate>（最终候选）
 
 #### Query Hydrators（查询增强器）
 
-```rust
-async fn hydrate_query(&self, query: Q) -> Q {
-    // 并行执行所有 query hydrators
-    let hydrate_futures = hydrators.iter().map(|h| h.hydrate(&query));
-    let results = join_all(hydrate_futures).await;  // 等待所有完成
-    
-    // 合并结果
-    let mut hydrated_query = query;
-    for (hydrator, result) in hydrators.iter().zip(results) {
-        hydrator.update(&mut hydrated_query, hydrated);
-    }
-    hydrated_query
+```go
+// Go 版：并行执行 Query Hydrators，并把各自结果 merge 到 query（等价于 join_all + update）
+func (p *CandidatePipeline) hydrateQuery(ctx context.Context, query *Query) *Query {
+	hydrated := query.Clone()
+
+	type item struct {
+		h QueryHydrator
+		r any
+		e error
+	}
+
+	hydrators := make([]QueryHydrator, 0, len(p.queryHydrators))
+	for _, h := range p.queryHydrators {
+		if h.Enable(query) {
+			hydrators = append(hydrators, h)
+		}
+	}
+
+	ch := make(chan item, len(hydrators))
+	var wg sync.WaitGroup
+	for _, h := range hydrators {
+		wg.Add(1)
+		go func(h QueryHydrator) {
+			defer wg.Done()
+			res, err := h.Hydrate(ctx, query)
+			ch <- item{h: h, r: res, e: err}
+		}(h)
+	}
+	wg.Wait()
+	close(ch)
+
+	for it := range ch {
+		if it.e != nil {
+			// 记录错误，不中断流程（和 Rust 版一致）
+			log.Printf("request_id=%s stage=QueryHydrator component=%s failed: %v",
+				query.RequestID, it.h.Name(), it.e)
+			continue
+		}
+		it.h.Update(hydrated, it.r)
+	}
+
+	return hydrated
 }
 ```
 
@@ -213,18 +323,47 @@ async fn hydrate_query(&self, query: Q) -> Q {
 
 #### Sources（候选源）
 
-```rust
-async fn fetch_candidates(&self, query: &Q) -> Vec<C> {
-    // 并行执行所有 sources
-    let source_futures = sources.iter().map(|s| s.get_candidates(query));
-    let results = join_all(source_futures).await;  // 等待所有完成
-    
-    // 合并结果
-    let mut collected = Vec::new();
-    for (source, result) in sources.iter().zip(results) {
-        collected.append(&mut candidates);
-    }
-    collected
+```go
+// Go 版：并行执行 Sources，最后合并所有候选（等价于 join_all + append）
+func (p *CandidatePipeline) fetchCandidates(ctx context.Context, query *Query) []*Candidate {
+	sources := make([]Source, 0, len(p.sources))
+	for _, s := range p.sources {
+		if s.Enable(query) {
+			sources = append(sources, s)
+		}
+	}
+
+	type item struct {
+		s Source
+		c []*Candidate
+		e error
+	}
+	ch := make(chan item, len(sources))
+
+	var wg sync.WaitGroup
+	for _, s := range sources {
+		wg.Add(1)
+		go func(s Source) {
+			defer wg.Done()
+			cs, err := s.GetCandidates(ctx, query)
+			ch <- item{s: s, c: cs, e: err}
+		}(s)
+	}
+	wg.Wait()
+	close(ch)
+
+	var collected []*Candidate
+	for it := range ch {
+		if it.e != nil {
+			log.Printf("request_id=%s stage=Source component=%s failed: %v",
+				query.RequestID, it.s.Name(), it.e)
+			continue
+		}
+		log.Printf("request_id=%s stage=Source component=%s fetched %d candidates",
+			query.RequestID, it.s.Name(), len(it.c))
+		collected = append(collected, it.c...)
+	}
+	return collected
 }
 ```
 
@@ -235,17 +374,53 @@ async fn fetch_candidates(&self, query: &Q) -> Vec<C> {
 
 #### Hydrators（候选增强器）
 
-```rust
-async fn hydrate(&self, query: &Q, candidates: Vec<C>) -> Vec<C> {
-    // 并行执行所有 hydrators
-    let hydrate_futures = hydrators.iter().map(|h| h.hydrate(query, &candidates));
-    let results = join_all(hydrate_futures).await;
-    
-    // 更新所有候选
-    for (hydrator, result) in hydrators.iter().zip(results) {
-        hydrator.update_all(&mut candidates, hydrated);
-    }
-    candidates
+```go
+// Go 版：并行执行 Hydrators，并把每个 hydrator 的结果 merge 回 candidates
+// 注意：为简化理解，这里选择“每个 hydrator 返回同长度的 hydratedCandidates，用来逐个 update”
+func (p *CandidatePipeline) hydrateCandidates(ctx context.Context, query *Query, candidates []*Candidate) []*Candidate {
+	hydrators := make([]Hydrator, 0, len(p.hydrators))
+	for _, h := range p.hydrators {
+		if h.Enable(query) {
+			hydrators = append(hydrators, h)
+		}
+	}
+
+	type item struct {
+		h Hydrator
+		r []*Candidate
+		e error
+	}
+	ch := make(chan item, len(hydrators))
+	var wg sync.WaitGroup
+	for _, h := range hydrators {
+		wg.Add(1)
+		go func(h Hydrator) {
+			defer wg.Done()
+			hydrated, err := h.Hydrate(ctx, query, candidates)
+			ch <- item{h: h, r: hydrated, e: err}
+		}(h)
+	}
+	wg.Wait()
+	close(ch)
+
+	expectedLen := len(candidates)
+	for it := range ch {
+		if it.e != nil {
+			log.Printf("request_id=%s stage=Hydrator component=%s failed: %v",
+				query.RequestID, it.h.Name(), it.e)
+			continue
+		}
+		if len(it.r) != expectedLen {
+			log.Printf("request_id=%s stage=Hydrator component=%s skipped: length_mismatch expected=%d got=%d",
+				query.RequestID, it.h.Name(), expectedLen, len(it.r))
+			continue
+		}
+		// merge：逐个 candidate update（等价于 Rust 的 update_all）
+		for i := 0; i < expectedLen; i++ {
+			it.h.Update(candidates[i], it.r[i])
+		}
+	}
+	return candidates
 }
 ```
 
@@ -260,25 +435,27 @@ async fn hydrate(&self, query: &Q, candidates: Vec<C>) -> Vec<C> {
 
 #### Filters（过滤器）
 
-```rust
-async fn filter(&self, query: &Q, candidates: Vec<C>) -> (Vec<C>, Vec<C>) {
-    let mut kept = candidates;
-    let mut removed = Vec::new();
-    
-    // 顺序执行每个 filter
-    for filter in filters {
-        let backup = kept.clone();  // 备份，以防失败
-        match filter.filter(query, kept).await {
-            Ok(result) => {
-                kept = result.kept;  // 使用过滤后的结果
-                removed.extend(result.removed);
-            }
-            Err(err) => {
-                kept = backup;  // 失败时恢复
-            }
-        }
-    }
-    (kept, removed)
+```go
+// Go 版：顺序执行 Filters（每个 filter 以上一个 filter 的 kept 作为输入）
+func (p *CandidatePipeline) filterCandidates(ctx context.Context, query *Query, candidates []*Candidate) (kept []*Candidate, removed []*Candidate) {
+	kept = candidates
+	for _, f := range p.filters {
+		if !f.Enable(query) {
+			continue
+		}
+		backup := append([]*Candidate(nil), kept...) // 备份，以防失败（等价于 Rust clone）
+		res, err := f.Filter(ctx, query, kept)
+		if err != nil {
+			log.Printf("request_id=%s stage=Filter component=%s failed: %v",
+				query.RequestID, f.Name(), err)
+			kept = backup // 恢复备份
+			continue
+		}
+		kept = res.Kept
+		removed = append(removed, res.Removed...)
+	}
+	log.Printf("request_id=%s stage=Filter kept %d, removed %d", query.RequestID, len(kept), len(removed))
+	return kept, removed
 }
 ```
 
@@ -289,20 +466,30 @@ async fn filter(&self, query: &Q, candidates: Vec<C>) -> (Vec<C>, Vec<C>) {
 
 #### Scorers（打分器）
 
-```rust
-async fn score(&self, query: &Q, mut candidates: Vec<C>) -> Vec<C> {
-    // 顺序执行每个 scorer
-    for scorer in scorers {
-        match scorer.score(query, &candidates).await {
-            Ok(scored) => {
-                scorer.update_all(&mut candidates, scored);  // 更新候选
-            }
-            Err(err) => {
-                // 记录错误，继续下一个
-            }
-        }
-    }
-    candidates
+```go
+// Go 版：顺序执行 Scorers（每个 scorer 基于上一个 scorer 已经更新过的 candidates）
+func (p *CandidatePipeline) scoreCandidates(ctx context.Context, query *Query, candidates []*Candidate) []*Candidate {
+	expectedLen := len(candidates)
+	for _, s := range p.scorers {
+		if !s.Enable(query) {
+			continue
+		}
+		scored, err := s.Score(ctx, query, candidates)
+		if err != nil {
+			log.Printf("request_id=%s stage=Scorer component=%s failed: %v",
+				query.RequestID, s.Name(), err)
+			continue
+		}
+		if len(scored) != expectedLen {
+			log.Printf("request_id=%s stage=Scorer component=%s skipped: length_mismatch expected=%d got=%d",
+				query.RequestID, s.Name(), expectedLen, len(scored))
+			continue
+		}
+		for i := 0; i < expectedLen; i++ {
+			s.Update(candidates[i], scored[i])
+		}
+	}
+	return candidates
 }
 ```
 
@@ -549,14 +736,15 @@ for filter in filters {
 
 每个阶段都有详细的日志：
 
-```rust
-info!(
-    "request_id={} stage={:?} component={} fetched {} candidates",
-    request_id,
-    PipelineStage::Source,
-    source.name(),
-    candidates.len()
-);
+```go
+// Go 版日志（建议统一结构，便于 grep / 日志平台检索）
+log.Printf(
+	"request_id=%s stage=%s component=%s fetched=%d",
+	requestID,
+	"Source",
+	source.Name(),
+	len(candidates),
+)
 ```
 
 **日志包含**：
