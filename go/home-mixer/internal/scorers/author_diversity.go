@@ -5,7 +5,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // AuthorDiversityScorer 调整分数以确保 Feed 中作者多样性

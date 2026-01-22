@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package thunder;
 
-option go_package = "github.com/x-algorithm/go/pkg/proto/thunder";
+option go_package = "x-algorithm-go/proto/thunder";
 
 // InNetworkPostsService provides access to in-network posts
 service InNetworkPostsService {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // MockThunderClient 是 ThunderClient 的 Mock 实现（用于测试）

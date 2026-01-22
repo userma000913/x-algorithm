@@ -46,10 +46,10 @@ impl Filter<ScoredPostsQuery, PostCandidate> for MutedKeywordFilter {
         for candidate in candidates {
             let tweet_text_token_sequence = self.tokenizer.tokenize(&candidate.tweet_text);
             if matcher.matches(&tweet_text_token_sequence) {
-                // Matches muted keywords - should be removed/filtered out
+                // 匹配静音关键词 - 应被移除/过滤掉
                 removed.push(candidate);
             } else {
-                // Does not match muted keywords - keep it
+                // 不匹配静音关键词 - 保留
                 kept.push(candidate);
             }
         }

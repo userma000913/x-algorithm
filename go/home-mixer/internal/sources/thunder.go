@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // ThunderSource 从 Thunder 服务获取站内内容（关注账号的帖子）

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // VFFilter 移除可见性过滤（Visibility Filtering）标记为不可见的帖子

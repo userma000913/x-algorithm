@@ -3,7 +3,7 @@ package scorers
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // PhoenixScorer 使用 Phoenix 模型为候选打分

@@ -6,10 +6,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/x-algorithm/go/thunder/internal/config"
-	"github.com/x-algorithm/go/thunder/internal/poststore"
-	"github.com/x-algorithm/go/thunder/internal/strato"
-	"github.com/x-algorithm/go/pkg/proto/thunder"
+	"x-algorithm-go/thunder/internal/config"
+	"x-algorithm-go/thunder/internal/poststore"
+	"x-algorithm-go/thunder/internal/strato"
+	"x-algorithm-go/proto/thunder"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -154,7 +154,7 @@ func (s *ThunderServiceImpl) GetInNetworkPosts(
 
 // recordMetrics records metrics for GetInNetworkPosts request
 func recordMetrics(req *thunder.GetInNetworkPostsRequest, returnedCount int, foundCount int, duration time.Duration) {
-	// TODO: Integrate with metrics package when available
+	// TODO: 当指标包可用时集成
 	_ = req
 	_ = returnedCount
 	_ = foundCount
@@ -206,7 +206,7 @@ func (s *ThunderServiceImpl) AnalyzeAndReportPostStatistics(posts []*thunder.Lig
 	log.Printf("Post Statistics: %d posts, %d unique authors, %.2f posts/author, %.2f reply ratio, %d freshness seconds, %d time range seconds",
 		len(posts), len(uniqueAuthors), postsPerAuthor, replyRatio, freshnessSeconds, timeRangeSeconds)
 
-	// TODO: Record metrics when metrics package is integrated
+	// TODO: 当指标包集成时记录指标
 	_ = freshnessSeconds
 	_ = timeRangeSeconds
 	_ = replyRatio

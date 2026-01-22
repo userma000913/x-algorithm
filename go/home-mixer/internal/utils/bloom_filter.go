@@ -4,7 +4,7 @@ import (
 	"hash/fnv"
 	"math"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // BloomFilter 表示一个布隆过滤器

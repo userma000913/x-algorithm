@@ -4,22 +4,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x-algorithm/go/home-mixer/internal/hydrators"
+	"x-algorithm-go/home-mixer/internal/hydrators"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// GizmoduckClientImpl implements GizmoduckClient interface
+// GizmoduckClientImpl 实现 GizmoduckClient 接口
 type GizmoduckClientImpl struct {
 	conn   *grpc.ClientConn
 	address string
 }
 
-// NewGizmoduckClient creates a new Gizmoduck client
+// NewGizmoduckClient 创建一个新的 Gizmoduck 客户端
 func NewGizmoduckClient(address string) (hydrators.GizmoduckClient, error) {
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Gizmoduck service: %w", err)
+		return nil, fmt.Errorf("连接 Gizmoduck 服务失败: %w", err)
 	}
 
 	return &GizmoduckClientImpl{
@@ -28,13 +28,13 @@ func NewGizmoduckClient(address string) (hydrators.GizmoduckClient, error) {
 	}, nil
 }
 
-// GetUsers implements GizmoduckClient interface
+// GetUsers 实现 GizmoduckClient 接口
 func (c *GizmoduckClientImpl) GetUsers(
 	ctx context.Context,
 	userIDs []int64,
 ) (map[int64]*hydrators.GizmoduckUserResult, error) {
-	// Mock implementation for local learning/testing
-	// Returns test user profile data
+	// 用于本地学习/测试的模拟实现
+	// 返回测试用户资料数据
 	
 	_ = ctx
 	
@@ -57,7 +57,7 @@ func (c *GizmoduckClientImpl) GetUsers(
 	return result, nil
 }
 
-// Close closes the gRPC connection
+// Close 关闭 gRPC 连接
 func (c *GizmoduckClientImpl) Close() error {
 	if c.conn != nil {
 		return c.conn.Close()

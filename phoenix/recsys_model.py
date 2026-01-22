@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class HashConfig:
-    """Configuration for hash-based embeddings."""
+    """基于哈希的嵌入配置。"""
 
     num_user_hashes: int = 2
     num_item_hashes: int = 2
@@ -40,10 +40,10 @@ class HashConfig:
 
 @dataclass
 class RecsysEmbeddings:
-    """Container for pre-looked-up embeddings from the embedding tables.
+    """来自嵌入表的预查找嵌入容器。
 
-    These embeddings are looked up from hash tables before being passed to the model.
-    The block_*_reduce functions will combine multiple hash embeddings into single representations.
+    这些嵌入在传递给模型之前从哈希表中查找。
+    block_*_reduce 函数将多个哈希嵌入组合成单个表示。
     """
 
     user_embeddings: jax.typing.ArrayLike
@@ -54,16 +54,16 @@ class RecsysEmbeddings:
 
 
 class RecsysModelOutput(NamedTuple):
-    """Output of the recommendation model."""
+    """推荐模型的输出。"""
 
     logits: jax.Array
 
 
 class RecsysBatch(NamedTuple):
-    """Input batch for the recommendation model.
+    """推荐模型的输入批次。
 
-    Contains the feature data (hashes, actions, product surfaces) but NOT the embeddings.
-    Embeddings are passed separately via RecsysEmbeddings.
+    包含特征数据（哈希、动作、产品表面），但不包含嵌入。
+    嵌入通过 RecsysEmbeddings 单独传递。
     """
 
     user_hashes: jax.typing.ArrayLike
@@ -83,18 +83,18 @@ def block_user_reduce(
     emb_size: int,
     embed_init_scale: float = 1.0,
 ) -> Tuple[jax.Array, jax.Array]:
-    """Combine multiple user hash embeddings into a single user representation.
+    """将多个用户哈希嵌入组合成单个用户表示。
 
-    Args:
-        user_hashes: [B, num_user_hashes] - hash values (0 = invalid/padding)
-        user_embeddings: [B, num_user_hashes, D] - looked-up embeddings
-        num_user_hashes: number of hash functions used
-        emb_size: embedding dimension D
-        embed_init_scale: initialization scale for projection
+    参数:
+        user_hashes: [B, num_user_hashes] - 哈希值（0 = 无效/填充）
+        user_embeddings: [B, num_user_hashes, D] - 查找的嵌入
+        num_user_hashes: 使用的哈希函数数量
+        emb_size: 嵌入维度 D
+        embed_init_scale: 投影的初始化缩放
 
-    Returns:
-        user_embedding: [B, 1, D] - combined user embedding
-        user_padding_mask: [B, 1] - True where user is valid
+    返回:
+        user_embedding: [B, 1, D] - 组合的用户嵌入
+        user_padding_mask: [B, 1] - 用户有效时为 True
     """
     B = user_embeddings.shape[0]
     D = emb_size
@@ -113,7 +113,7 @@ def block_user_reduce(
         user_embeddings.dtype
     )
 
-    # hash 0 is reserved for padding)
+    # 哈希 0 保留用于填充
     user_padding_mask = (user_hashes[:, 0] != 0).reshape(B, 1).astype(jnp.bool_)
 
     return user_embedding, user_padding_mask
@@ -129,20 +129,20 @@ def block_history_reduce(
     num_author_hashes: int,
     embed_init_scale: float = 1.0,
 ) -> Tuple[jax.Array, jax.Array]:
-    """Combine history embeddings (post, author, actions, product_surface) into sequence.
+    """将历史嵌入（帖子、作者、动作、产品表面）组合成序列。
 
-    Args:
+    参数:
         history_post_hashes: [B, S, num_item_hashes]
         history_post_embeddings: [B, S, num_item_hashes, D]
         history_author_embeddings: [B, S, num_author_hashes, D]
         history_product_surface_embeddings: [B, S, D]
         history_actions_embeddings: [B, S, D]
-        num_item_hashes: number of hash functions for items
-        num_author_hashes: number of hash functions for authors
-        emb_size: embedding dimension D
-        embed_init_scale: initialization scale
+        num_item_hashes: 项目的哈希函数数量
+        num_author_hashes: 作者的哈希函数数量
+        emb_size: 嵌入维度 D
+        embed_init_scale: 初始化缩放
 
-    Returns:
+    返回:
         history_embeddings: [B, S, D]
         history_padding_mask: [B, S]
     """
@@ -191,19 +191,19 @@ def block_candidate_reduce(
     num_author_hashes: int,
     embed_init_scale: float = 1.0,
 ) -> Tuple[jax.Array, jax.Array]:
-    """Combine candidate embeddings (post, author, product_surface) into sequence.
+    """将候选嵌入（帖子、作者、产品表面）组合成序列。
 
-    Args:
+    参数:
         candidate_post_hashes: [B, C, num_item_hashes]
         candidate_post_embeddings: [B, C, num_item_hashes, D]
         candidate_author_embeddings: [B, C, num_author_hashes, D]
         candidate_product_surface_embeddings: [B, C, D]
-        num_item_hashes: number of hash functions for items
-        num_author_hashes: number of hash functions for authors
-        emb_size: embedding dimension D
-        embed_init_scale: initialization scale
+        num_item_hashes: 项目的哈希函数数量
+        num_author_hashes: 作者的哈希函数数量
+        emb_size: 嵌入维度 D
+        embed_init_scale: 初始化缩放
 
-    Returns:
+    返回:
         candidate_embeddings: [B, C, D]
         candidate_padding_mask: [B, C]
     """
@@ -244,7 +244,7 @@ def block_candidate_reduce(
 
 @dataclass
 class PhoenixModelConfig:
-    """Configuration for the recommendation system model."""
+    """推荐系统模型的配置。"""
 
     model: TransformerConfig
     emb_size: int
@@ -283,7 +283,7 @@ class PhoenixModelConfig:
 
 @dataclass
 class PhoenixModel(hk.Module):
-    """A transformer-based recommendation model for ranking candidates."""
+    """基于 Transformer 的推荐模型，用于对候选进行排序。"""
 
     model: Transformer
     config: PhoenixModelConfig
@@ -294,10 +294,10 @@ class PhoenixModel(hk.Module):
         self,
         actions: jax.Array,
     ) -> jax.Array:
-        """Convert multi-hot action vectors to embeddings.
+        """将多热动作向量转换为嵌入。
 
-        Uses a learned projection matrix to map the signed action vector
-        to the embedding dimension. This works for any number of actions.
+        使用学习的投影矩阵将有符号动作向量映射到嵌入维度。
+        这适用于任意数量的动作。
         """
         config = self.config
         _, _, num_actions = actions.shape
@@ -327,15 +327,15 @@ class PhoenixModel(hk.Module):
         emb_size: int,
         name: str,
     ) -> jax.Array:
-        """Convert single-hot indices to embeddings via lookup table.
+        """通过查找表将单热索引转换为嵌入。
 
-        Args:
-            input: [B, S] tensor of categorical indices
-            vocab_size: size of the vocabulary
-            emb_size: embedding dimension
-            name: name for the embedding table parameter
+        参数:
+            input: [B, S] 分类索引张量
+            vocab_size: 词汇表大小
+            emb_size: 嵌入维度
+            name: 嵌入表参数的名称
 
-        Returns:
+        返回:
             embeddings: [B, S, emb_size]
         """
         embed_init = hk.initializers.VarianceScaling(1.0, mode="fan_out")
@@ -351,7 +351,7 @@ class PhoenixModel(hk.Module):
         return output.astype(self.fprop_dtype)
 
     def _get_unembedding(self) -> jax.Array:
-        """Get the unembedding matrix for decoding to logits."""
+        """获取用于解码为 logits 的反嵌入矩阵。"""
         config = self.config
         embed_init = hk.initializers.VarianceScaling(1.0, mode="fan_out")
         unembed_mat = hk.get_parameter(
@@ -367,16 +367,16 @@ class PhoenixModel(hk.Module):
         batch: RecsysBatch,
         recsys_embeddings: RecsysEmbeddings,
     ) -> Tuple[jax.Array, jax.Array, int]:
-        """Build input embeddings from batch and pre-looked-up embeddings.
+        """从批次和预查找嵌入构建输入嵌入。
 
-        Args:
-            batch: RecsysBatch containing hashes, actions, product surfaces
-            recsys_embeddings: RecsysEmbeddings containing pre-looked-up embeddings
+        参数:
+            batch: 包含哈希、动作、产品表面的 RecsysBatch
+            recsys_embeddings: 包含预查找嵌入的 RecsysEmbeddings
 
-        Returns:
+        返回:
             embeddings: [B, 1 + history_len + num_candidates, D]
             padding_mask: [B, 1 + history_len + num_candidates]
-            candidate_start_offset: int - position where candidates start
+            candidate_start_offset: int - 候选开始的位置
         """
         config = self.config
         hash_config = config.hash_config
@@ -441,14 +441,14 @@ class PhoenixModel(hk.Module):
         batch: RecsysBatch,
         recsys_embeddings: RecsysEmbeddings,
     ) -> RecsysModelOutput:
-        """Forward pass for ranking candidates.
+        """对候选进行排序的前向传播。
 
-        Args:
-            batch: RecsysBatch containing hashes, actions, product surfaces
-            recsys_embeddings: RecsysEmbeddings containing pre-looked-up embeddings
+        参数:
+            batch: 包含哈希、动作、产品表面的 RecsysBatch
+            recsys_embeddings: 包含预查找嵌入的 RecsysEmbeddings
 
-        Returns:
-            RecsysModelOutput containing logits for each candidate. Shape = [B, num_candidates, num_actions]
+        返回:
+            包含每个候选 logits 的 RecsysModelOutput。形状 = [B, num_candidates, num_actions]
         """
         embeddings, padding_mask, candidate_start_offset = self.build_inputs(
             batch, recsys_embeddings

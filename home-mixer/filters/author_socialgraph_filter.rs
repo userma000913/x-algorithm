@@ -3,7 +3,7 @@ use crate::candidate_pipeline::query::ScoredPostsQuery;
 use tonic::async_trait;
 use xai_candidate_pipeline::filter::{Filter, FilterResult};
 
-// Remove candidates that are blocked or muted by the viewer
+// 移除被查看者屏蔽或静音的候选
 pub struct AuthorSocialgraphFilter;
 
 #[async_trait]

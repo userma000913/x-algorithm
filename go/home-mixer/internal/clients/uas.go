@@ -4,22 +4,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x-algorithm/go/home-mixer/internal/query_hydrators"
+	"x-algorithm-go/home-mixer/internal/query_hydrators"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// UASFetcherImpl implements UserActionSequenceFetcher interface
+// UASFetcherImpl 实现 UserActionSequenceFetcher 接口
 type UASFetcherImpl struct {
 	conn   *grpc.ClientConn
 	address string
 }
 
-// NewUASFetcher creates a new UAS Fetcher client
+// NewUASFetcher 创建一个新的 UAS 获取器客户端
 func NewUASFetcher(address string) (query_hydrators.UserActionSequenceFetcher, error) {
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to UAS service: %w", err)
+		return nil, fmt.Errorf("连接 UAS 服务失败: %w", err)
 	}
 
 	return &UASFetcherImpl{
@@ -28,17 +28,17 @@ func NewUASFetcher(address string) (query_hydrators.UserActionSequenceFetcher, e
 	}, nil
 }
 
-// GetByUserID implements UserActionSequenceFetcher interface
+// GetByUserID 实现 UserActionSequenceFetcher 接口
 func (c *UASFetcherImpl) GetByUserID(
 	ctx context.Context,
 	userID int64,
 ) (*query_hydrators.UserActionSequenceData, error) {
-	// Mock implementation for local learning/testing
-	// Returns test user action sequence (engagement history)
+	// 用于本地学习/测试的模拟实现
+	// 返回测试用户动作序列（交互历史）
 	
 	_ = ctx
 	
-	// Generate some mock engagement actions
+	// 生成一些模拟交互动作
 	actions := make([]query_hydrators.UserActionData, 20)
 	currentTime := int64(1704067200) // 2024-01-01 00:00:00 UTC
 	
@@ -53,7 +53,7 @@ func (c *UASFetcherImpl) GetByUserID(
 		actions[i] = query_hydrators.UserActionData{
 			ActionType: actionType,
 			TweetID:    currentTime + int64(i*100),
-			Timestamp:  currentTime - int64(i*3600), // Actions spread over last 20 hours
+			Timestamp:  currentTime - int64(i*3600), // 动作分布在过去 20 小时内
 		}
 	}
 	
@@ -64,7 +64,7 @@ func (c *UASFetcherImpl) GetByUserID(
 	return sequence, nil
 }
 
-// Close closes the gRPC connection
+// Close 关闭 gRPC 连接
 func (c *UASFetcherImpl) Close() error {
 	if c.conn != nil {
 		return c.conn.Close()

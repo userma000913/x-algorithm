@@ -3,7 +3,7 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // IneligibleSubscriptionFilter 移除用户未订阅的订阅内容

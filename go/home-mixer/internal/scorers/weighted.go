@@ -4,8 +4,8 @@ import (
 	"context"
 	"math"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/utils"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/utils"
 )
 
 // WeightedScorer 加权组合多个预测分数

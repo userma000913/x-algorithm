@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/x-algorithm/go/home-mixer/internal/clients"
-	"github.com/x-algorithm/go/home-mixer/internal/filters"
-	"github.com/x-algorithm/go/home-mixer/internal/hydrators"
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/query_hydrators"
-	"github.com/x-algorithm/go/home-mixer/internal/scorers"
-	"github.com/x-algorithm/go/home-mixer/internal/selectors"
-	"github.com/x-algorithm/go/home-mixer/internal/side_effects"
-	"github.com/x-algorithm/go/home-mixer/internal/sources"
+	"x-algorithm-go/home-mixer/internal/clients"
+	"x-algorithm-go/home-mixer/internal/filters"
+	"x-algorithm-go/home-mixer/internal/hydrators"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/query_hydrators"
+	"x-algorithm-go/home-mixer/internal/scorers"
+	"x-algorithm-go/home-mixer/internal/selectors"
+	"x-algorithm-go/home-mixer/internal/side_effects"
+	"x-algorithm-go/home-mixer/internal/sources"
 )
 
 // PhoenixCandidatePipeline 配置完整的推荐管道
@@ -199,8 +199,8 @@ func Prod(
 	uasAddr string,
 	vfAddr string,
 ) (*PhoenixCandidatePipeline, error) {
-	// Note: For local learning/testing, this creates mock clients
-	// In production, you would use real gRPC clients
+	// 注意：对于本地学习/测试，这会创建模拟客户端
+	// 在生产环境中，您应该使用真实的 gRPC 客户端
 	
 	// Create mock clients (or real clients if addresses are provided)
 	config := &PipelineConfig{

@@ -3,7 +3,7 @@ package hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // CoreDataCandidateHydrator 增强候选的核心数据（帖子内容、作者信息等）

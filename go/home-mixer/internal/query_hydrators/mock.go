@@ -3,7 +3,7 @@ package query_hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // MockUserActionSequenceFetcher 是 UserActionSequenceFetcher 的 Mock 实现（用于测试）

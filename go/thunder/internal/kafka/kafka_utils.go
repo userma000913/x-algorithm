@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x-algorithm/go/thunder/internal/deserializer"
-	"github.com/x-algorithm/go/thunder/internal/metrics"
-	"github.com/x-algorithm/go/thunder/internal/poststore"
+	"x-algorithm-go/thunder/internal/deserializer"
+	"x-algorithm-go/thunder/internal/metrics"
+	"x-algorithm-go/thunder/internal/poststore"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -161,7 +161,7 @@ func StartTweetEventProcessingV2(
 	}
 
 	// Wait for all threads to complete catchup
-	// Note: catchupChan is send-only, so we can't receive from it here
+	// 注意：catchupChan 是仅发送的，所以这里无法从中接收
 	// In a real implementation, we would use a separate receive channel
 	if catchupChan != nil {
 		log.Println("Waiting for Kafka catchup...")

@@ -3,7 +3,7 @@ package query_hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // UserFeaturesQueryHydrator 增强查询，添加用户特征（关注列表、屏蔽列表等）

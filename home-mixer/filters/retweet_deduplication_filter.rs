@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use tonic::async_trait;
 use xai_candidate_pipeline::filter::{Filter, FilterResult};
 
-/// Deduplicates retweets, keeping only the first occurrence of a tweet
-/// (whether as an original or as a retweet).
+/// 对转推进行去重，只保留推文的首次出现
+/// （无论是原始推文还是转推）。
 pub struct RetweetDeduplicationFilter;
 
 #[async_trait]
@@ -22,7 +22,7 @@ impl Filter<ScoredPostsQuery, PostCandidate> for RetweetDeduplicationFilter {
         for candidate in candidates {
             match candidate.retweeted_tweet_id {
                 Some(retweeted_id) => {
-                    // Remove if we've already seen this tweet (as original or retweet)
+                    // 如果已经见过这条推文（作为原始推文或转推），则移除
                     if seen_tweet_ids.insert(retweeted_id) {
                         kept.push(candidate);
                     } else {
@@ -30,7 +30,7 @@ impl Filter<ScoredPostsQuery, PostCandidate> for RetweetDeduplicationFilter {
                     }
                 }
                 None => {
-                    // Mark this original tweet ID as seen so retweets of it get filtered
+                    // 标记这条原始推文ID为已见，以便过滤掉它的转推
                     seen_tweet_ids.insert(candidate.tweet_id as u64);
                     kept.push(candidate);
                 }

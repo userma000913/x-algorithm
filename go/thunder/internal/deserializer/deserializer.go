@@ -3,36 +3,36 @@ package deserializer
 import (
 	"time"
 
-	"github.com/x-algorithm/go/pkg/proto/thunder"
+	"x-algorithm-go/proto/thunder"
 	"google.golang.org/protobuf/proto"
 )
 
-// InNetworkEvent represents an in-network event (for internal use)
+// InNetworkEvent 表示站内事件（供内部使用）
 type InNetworkEvent struct {
-	EventVariant interface{} // Can be *TweetCreateEvent or *TweetDeleteEvent
+	EventVariant interface{} // 可以是 *TweetCreateEvent 或 *TweetDeleteEvent
 }
 
-// DeserializeTweetEventV2 deserializes a proto binary message into InNetworkEvent
+// DeserializeTweetEventV2 将 proto 二进制消息反序列化为 InNetworkEvent
 func DeserializeTweetEventV2(payload []byte) (*InNetworkEvent, error) {
-	// Try to decode as InNetworkEvent proto message
-	// Since we're using placeholder proto, we'll create a mock implementation
-	// In production, this would use: proto.Unmarshal(payload, &thunder.InNetworkEvent{})
+	// 尝试解码为 InNetworkEvent proto 消息
+	// 由于我们使用的是占位符 proto，我们将创建一个模拟实现
+	// 在生产环境中，这将使用: proto.Unmarshal(payload, &thunder.InNetworkEvent{})
 	
-	// For now, return a placeholder
-	// TODO: Implement actual proto decoding when proto files are properly generated
+	// 目前返回一个占位符
+	// TODO: 当 proto 文件正确生成时实现实际的 proto 解码
 	return &InNetworkEvent{
-		EventVariant: nil, // Will be set in ExtractPostsFromEvents
+		EventVariant: nil, // 将在 ExtractPostsFromEvents 中设置
 	}, nil
 }
 
-// DeserializeKafkaMessages deserializes a batch of Kafka messages
+// DeserializeKafkaMessages 反序列化一批 Kafka 消息
 func DeserializeKafkaMessages(messages [][]byte, deserializeFunc func([]byte) (*thunder.InNetworkEvent, error)) ([]*thunder.InNetworkEvent, error) {
 	results := make([]*thunder.InNetworkEvent, 0, len(messages))
 
 	for _, msg := range messages {
 		event, err := deserializeFunc(msg)
 		if err != nil {
-			// Log error but continue processing other messages
+			// 记录错误但继续处理其他消息
 			continue
 		}
 		if event != nil {
@@ -43,7 +43,7 @@ func DeserializeKafkaMessages(messages [][]byte, deserializeFunc func([]byte) (*
 	return results, nil
 }
 
-// ExtractPostsFromEvents extracts LightPost and TweetDeleteEvent from InNetworkEvent
+// ExtractPostsFromEvents 从 InNetworkEvent 中提取 LightPost 和 TweetDeleteEvent
 func ExtractPostsFromEvents(events []*InNetworkEvent) ([]*thunder.LightPost, []*thunder.TweetDeleteEvent) {
 	createTweets := make([]*thunder.LightPost, 0, len(events))
 	deleteTweets := make([]*thunder.TweetDeleteEvent, 0, 10)
@@ -53,28 +53,28 @@ func ExtractPostsFromEvents(events []*InNetworkEvent) ([]*thunder.LightPost, []*
 			continue
 		}
 
-		// For local learning, generate mock posts from events
-		// In production, this would check event.EventVariant type from proto
+		// 用于本地学习，从事件生成模拟帖子
+		// 在生产环境中，这将检查来自 proto 的 event.EventVariant 类型
 		
-		// Generate a mock LightPost for testing
-		// In real implementation, this would extract from event.EventVariant
+		// 生成一个用于测试的模拟 LightPost
+		// 在实际实现中，这将从 event.EventVariant 中提取
 		currentTime := time.Now().Unix()
-		authorID := int64(1000 + len(createTweets)%100) // Vary author IDs
+		authorID := int64(1000 + len(createTweets)%100) // 变化作者 ID
 		postID := int64(authorID)*1000000 + currentTime + int64(len(createTweets))
 		
 		createTweets = append(createTweets, &thunder.LightPost{
 			PostID:    postID,
 			AuthorID:  authorID,
 			CreatedAt: currentTime,
-			IsReply:   len(createTweets)%3 == 0, // Some are replies
-			IsRetweet: len(createTweets)%5 == 0, // Some are retweets
+			IsReply:   len(createTweets)%3 == 0, // 一些是回复
+			IsRetweet: len(createTweets)%5 == 0, // 一些是转发
 		})
 	}
 
 	return createTweets, deleteTweets
 }
 
-// Placeholder function to decode proto message
+// 用于解码 proto 消息的占位符函数
 func decodeProtoMessage(payload []byte, msg proto.Message) error {
 	return proto.Unmarshal(payload, msg)
 }

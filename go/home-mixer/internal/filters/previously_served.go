@@ -3,7 +3,7 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // PreviouslyServedPostsFilter 移除本次会话中已经服务过的帖子

@@ -50,7 +50,7 @@ impl Scorer<ScoredPostsQuery, PostCandidate> for PhoenixScorer {
                 let scored_candidates = candidates
                     .iter()
                     .map(|c| {
-                        // For retweets, look up predictions using the original tweet id
+                        // 对于转推，使用原始推文ID查找预测
                         let lookup_tweet_id = c.retweeted_tweet_id.unwrap_or(c.tweet_id as u64);
 
                         let phoenix_scores = predictions_map
@@ -71,7 +71,7 @@ impl Scorer<ScoredPostsQuery, PostCandidate> for PhoenixScorer {
             }
         }
 
-        // Return candidates unchanged if no scoring could be done
+        // 如果无法进行打分，则返回未更改的候选
         Ok(candidates.to_vec())
     }
 
@@ -83,7 +83,7 @@ impl Scorer<ScoredPostsQuery, PostCandidate> for PhoenixScorer {
 }
 
 impl PhoenixScorer {
-    /// Builds Map[tweet_id -> ActionPredictions]
+    /// 构建 Map[tweet_id -> ActionPredictions]
     fn build_predictions_map(
         &self,
         response: &xai_recsys_proto::PredictNextActionsResponse,
@@ -159,9 +159,9 @@ impl PhoenixScorer {
 }
 
 struct ActionPredictions {
-    /// Map of action index -> probability (exp of log prob)
+    /// 动作索引 -> 概率的映射（对数概率的指数）
     action_probs: HashMap<usize, f64>,
-    /// Map of continuous action index -> value
+    /// 连续动作索引 -> 值的映射
     continuous_values: HashMap<usize, f64>,
 }
 

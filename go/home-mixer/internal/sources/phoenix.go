@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // PhoenixSource 从 Phoenix Retrieval 服务获取站外内容（ML 检索）

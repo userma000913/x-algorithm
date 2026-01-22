@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/utils"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	// 这里假设 proto 生成的代码在 pkg/proto 包中
 	// 实际使用时需要先运行 protoc 生成代码
-	pb "github.com/x-algorithm/go/pkg/proto"
+	pb "x-algorithm-go/proto"
 )
 
 // HomeMixerServer 实现 gRPC 服务

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // CoreDataHydrationFilter 移除核心数据获取失败的候选

@@ -36,9 +36,9 @@ async fn main() -> anyhow::Result<()> {
         args.grpc_port, args.metrics_port, args.reload_interval_minutes, args.chunk_size,
     );
 
-    // Create the service implementation
+    // 创建服务实现
     let service = HomeMixerServer::new().await;
-    // Keep a reference to stats_receiver before service is moved
+    // 在服务被移动之前保留 stats_receiver 的引用
     let reflection_service = Builder::configure()
         .register_encoded_file_descriptor_set(pb::FILE_DESCRIPTOR_SET)
         .build_v1()?;

@@ -3,7 +3,7 @@ package utils
 import (
 	"math"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // NormalizeScore 归一化加权分数

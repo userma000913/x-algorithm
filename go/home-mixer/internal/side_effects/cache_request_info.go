@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // CacheRequestInfoSideEffect 缓存请求信息供后续使用

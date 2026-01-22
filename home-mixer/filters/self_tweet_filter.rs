@@ -3,7 +3,7 @@ use crate::candidate_pipeline::query::ScoredPostsQuery;
 use tonic::async_trait;
 use xai_candidate_pipeline::filter::{Filter, FilterResult};
 
-/// Filter that removes tweets where the author is the viewer.
+/// 过滤掉作者是查看者本人的推文。
 pub struct SelfTweetFilter;
 
 #[async_trait]

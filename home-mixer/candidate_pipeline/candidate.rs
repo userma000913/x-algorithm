@@ -46,7 +46,7 @@ pub struct PhoenixScores {
     pub block_author_score: Option<f64>,
     pub mute_author_score: Option<f64>,
     pub report_score: Option<f64>,
-    // Continuous actions
+    // 连续动作
     pub dwell_time: Option<f64>,
 }
 

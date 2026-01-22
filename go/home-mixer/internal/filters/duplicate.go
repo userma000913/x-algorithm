@@ -3,7 +3,7 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // DropDuplicatesFilter 移除重复的帖子（基于 tweet_id）

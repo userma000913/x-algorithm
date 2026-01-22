@@ -5,7 +5,7 @@ use xai_kafka::{KafkaMessage, config::KafkaConsumerConfig, consumer::KafkaConsum
 
 use crate::metrics;
 
-/// Create and start a Kafka consumer with the given configuration
+/// 使用给定配置创建并启动 Kafka 消费者
 pub async fn create_kafka_consumer(
     config: KafkaConsumerConfig,
 ) -> Result<Arc<RwLock<KafkaConsumer>>> {
@@ -18,7 +18,7 @@ pub async fn create_kafka_consumer(
     Ok(Arc::new(RwLock::new(consumer)))
 }
 
-/// Process a batch of Kafka messages and deserialize them using the provided deserializer function
+/// 处理一批 Kafka 消息并使用提供的反序列化函数反序列化它们
 pub fn deserialize_kafka_messages<T, F>(
     messages: Vec<KafkaMessage>,
     deserializer: F,

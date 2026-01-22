@@ -4,7 +4,7 @@ use crate::params as p;
 use tonic::async_trait;
 use xai_candidate_pipeline::scorer::Scorer;
 
-// Prioritize in-network candidates over out-of-network candidates
+// 优先处理站内候选而非站外候选
 pub struct OONScorer;
 
 #[async_trait]

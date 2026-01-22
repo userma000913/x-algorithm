@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package scoredposts;
 
-option go_package = "github.com/x-algorithm/go/pkg/proto";
+option go_package = "x-algorithm-go/proto";
 
 // ScoredPostsService 提供推荐帖子服务
 service ScoredPostsService {

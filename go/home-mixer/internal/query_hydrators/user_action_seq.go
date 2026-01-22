@@ -3,7 +3,7 @@ package query_hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // UserActionSeqQueryHydrator 增强查询，添加用户交互历史序列

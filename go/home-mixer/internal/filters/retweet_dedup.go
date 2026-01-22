@@ -3,7 +3,7 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // RetweetDeduplicationFilter 去重转发，只保留第一次出现的帖子

@@ -3,7 +3,7 @@ package hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // VFCandidateHydrator 增强候选的可见性信息（Visibility Filtering）

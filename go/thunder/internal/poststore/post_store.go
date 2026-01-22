@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x-algorithm/go/pkg/proto/thunder"
+	"x-algorithm-go/proto/thunder"
 )
 
 // PostStore is a thread-safe store for posts grouped by user ID
@@ -543,7 +543,7 @@ func (ps *PostStore) logStats() {
 	})
 
 	// Update metrics (if metrics package is available)
-	// TODO: Integrate with metrics package when available
+	// TODO: 当指标包可用时集成
 	_ = userCount
 	_ = totalPosts
 	_ = deletedPosts

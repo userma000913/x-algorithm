@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/utils"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/utils"
 )
 
 // AgeFilter 过滤掉超过指定年龄的帖子

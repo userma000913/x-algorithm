@@ -3,7 +3,7 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // DedupConversationFilter 对话去重，每个对话分支只保留分数最高的候选

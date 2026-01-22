@@ -3,7 +3,7 @@ package hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // VideoDurationCandidateHydrator 增强候选的视频时长信息

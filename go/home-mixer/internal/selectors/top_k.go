@@ -5,7 +5,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // TopKScoreSelector 按分数排序并选择 Top-K 候选

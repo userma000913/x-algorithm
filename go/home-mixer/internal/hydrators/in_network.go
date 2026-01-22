@@ -3,7 +3,7 @@ package hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // InNetworkCandidateHydrator 标记候选是否为站内内容（来自关注账号）

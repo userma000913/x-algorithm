@@ -3,7 +3,7 @@ package scorers
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // OONScorer 调整站外内容（Out-of-Network）的分数

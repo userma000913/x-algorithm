@@ -21,7 +21,7 @@ use xai_uas_thrift::user_action_sequence::{
     UserActionSequenceMeta as ThriftUserActionSequenceMeta,
 };
 
-/// Hydrate a sequence that captures the user's recent actions
+/// 填充捕获用户最近动作的序列
 pub struct UserActionSeqQueryHydrator {
     pub uas_fetcher: Arc<UserActionSequenceFetcher>,
     global_filter: Arc<dyn UserActionFilter>,
@@ -74,13 +74,13 @@ impl UserActionSeqQueryHydrator {
         user_id: i64,
         uas_thrift: ThriftUserActionSequence,
     ) -> Result<UserActionSequence, String> {
-        // Extract user_actions from thrift sequence
+        // 从 thrift 序列中提取 user_actions
         let thrift_user_actions = uas_thrift.user_actions.clone().unwrap_or_default();
         if thrift_user_actions.is_empty() {
             return Err(format!("No user actions found for user {}", user_id));
         }
 
-        // Pre-aggregation filter
+        // 预聚合过滤器
         let filtered_actions = self.global_filter.run(thrift_user_actions);
         if filtered_actions.is_empty() {
             return Err(format!(
@@ -89,23 +89,23 @@ impl UserActionSeqQueryHydrator {
             ));
         }
 
-        // Aggregate
+        // 聚合
         let mut aggregated_actions =
             self.aggregator
                 .run(&filtered_actions, p::UAS_WINDOW_TIME_MS, 0);
 
-        // Post-aggregation filters
+        // 后聚合过滤器
         for filter in &self.post_filters {
             aggregated_actions = filter.run(aggregated_actions);
         }
 
-        // Truncate to max sequence length (keep last N items)
+        // 截断到最大序列长度（保留最后N项）
         if aggregated_actions.len() > p::UAS_MAX_SEQUENCE_LENGTH {
             let drain_count = aggregated_actions.len() - p::UAS_MAX_SEQUENCE_LENGTH;
             aggregated_actions.drain(0..drain_count);
         }
 
-        // Convert to proto format
+        // 转换为 proto 格式
         let original_metadata = uas_thrift.metadata.clone().unwrap_or_default();
         convert_to_proto_sequence(
             user_id,
@@ -135,7 +135,7 @@ fn convert_to_proto_sequence(
         .and_then(|a| a.impressed_time_ms)
         .unwrap_or(0) as u64;
 
-    // Preserve lastModifiedEpochMs and lastKafkaPublishEpochMs from original metadata
+    // 保留原始元数据中的 lastModifiedEpochMs 和 lastKafkaPublishEpochMs
     let last_modified_epoch_ms = original_metadata.last_modified_epoch_ms.unwrap_or(0) as u64;
     let previous_kafka_publish_epoch_ms =
         original_metadata.last_kafka_publish_epoch_ms.unwrap_or(0) as u64;
@@ -148,7 +148,7 @@ fn convert_to_proto_sequence(
         previous_kafka_publish_epoch_ms,
     };
 
-    // Convert thrift aggregated actions to proto
+    // 将 thrift 聚合动作转换为 proto
     let mut proto_agg_actions = Vec::with_capacity(aggregated_actions.len());
     for action in aggregated_actions {
         proto_agg_actions.push(
@@ -173,7 +173,7 @@ fn convert_to_proto_sequence(
         mask: vec![false; agg_list.aggregated_user_actions.len()],
     };
 
-    // Build the final UserActionSequence
+    // 构建最终的 UserActionSequence
     Ok(UserActionSequence {
         user_id: user_id as u64,
         metadata: Some(proto_metadata),

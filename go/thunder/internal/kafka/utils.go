@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/x-algorithm/go/thunder/internal/metrics"
+	"x-algorithm-go/thunder/internal/metrics"
 )
 
 // GetMetrics returns the metrics instance
@@ -55,7 +55,7 @@ type KafkaConsumerConfig struct {
 // CreateKafkaConsumer creates and starts a Kafka consumer with the given configuration
 // This is a placeholder - in real implementation, this would create an actual Kafka consumer
 func CreateKafkaConsumer(ctx context.Context, config KafkaConsumerConfig) (KafkaConsumer, error) {
-	// TODO: Implement actual Kafka consumer creation
+	// TODO: 实现实际的 Kafka 消费者创建
 	// This would use a Kafka library like sarama or confluent-kafka-go
 	// For now, return a mock consumer
 	

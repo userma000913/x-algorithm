@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use tonic::async_trait;
 use xai_candidate_pipeline::filter::{Filter, FilterResult};
 
-/// Filters out subscription-only posts from authors the viewer is not subscribed to.
+/// 过滤掉查看者未订阅作者的仅订阅帖子。
 pub struct IneligibleSubscriptionFilter;
 
 #[async_trait]

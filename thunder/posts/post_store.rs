@@ -16,7 +16,7 @@ use crate::metrics::{
     POST_STORE_REQUESTS, POST_STORE_TOTAL_POSTS, POST_STORE_USER_COUNT,
 };
 
-/// Minimal post reference stored in user timelines (only ID and timestamp)
+/// 存储在用户时间线中的最小帖子引用（仅ID和时间戳）
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TinyPost {
     pub post_id: i64,
@@ -24,7 +24,7 @@ pub struct TinyPost {
 }
 
 impl TinyPost {
-    /// Create a new TinyPost from a post ID and creation timestamp
+    /// 从帖子ID和创建时间戳创建新的 TinyPost
     pub fn new(post_id: i64, created_at: i64) -> Self {
         TinyPost {
             post_id,
@@ -33,27 +33,27 @@ impl TinyPost {
     }
 }
 
-/// A thread-safe store for posts grouped by user ID
-/// Note: LightPost is now defined in the protobuf schema (in-network.proto)
+/// 按用户ID分组的帖子线程安全存储
+/// 注意：LightPost 现在在 protobuf 模式中定义（in-network.proto）
 #[derive(Clone)]
 pub struct PostStore {
-    /// Full post data indexed by post_id
+    /// 按 post_id 索引的完整帖子数据
     posts: Arc<DashMap<i64, LightPost>>,
-    /// Maps user_id to a deque of TinyPost references for original posts (non-reply, non-retweet)
+    /// 将 user_id 映射到原始帖子（非回复、非转推）的 TinyPost 引用双端队列
     original_posts_by_user: Arc<DashMap<i64, VecDeque<TinyPost>>>,
-    /// Maps user_id to a deque of TinyPost references for replies and retweets
+    /// 将 user_id 映射到回复和转推的 TinyPost 引用双端队列
     secondary_posts_by_user: Arc<DashMap<i64, VecDeque<TinyPost>>>,
-    /// Maps user_id to a deque of TinyPost references for video posts
+    /// 将 user_id 映射到视频帖子的 TinyPost 引用双端队列
     video_posts_by_user: Arc<DashMap<i64, VecDeque<TinyPost>>>,
     deleted_posts: Arc<DashMap<i64, bool>>,
-    /// Retention period for posts in seconds
+    /// 帖子保留期（秒）
     retention_seconds: u64,
-    /// Request timeout for get_posts_by_users iteration (0 = no timeout)
+    /// get_posts_by_users 迭代的请求超时（0 = 无超时）
     request_timeout: Duration,
 }
 
 impl PostStore {
-    /// Creates a new empty PostStore with the specified retention period and request timeout
+    /// 使用指定的保留期和请求超时创建新的空 PostStore
     pub fn new(retention_seconds: u64, request_timeout_ms: u64) -> Self {
         PostStore {
             posts: Arc::new(DashMap::new()),
@@ -82,9 +82,9 @@ impl PostStore {
         }
     }
 
-    /// Inserts posts into the post store
+    /// 将帖子插入到帖子存储中
     pub fn insert_posts(&self, mut posts: Vec<LightPost>) {
-        // Filter to keep only posts created in the last retention_seconds and not from the future
+        // 过滤以仅保留在过去 retention_seconds 内创建且不是来自未来的帖子
         let current_time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -94,7 +94,7 @@ impl PostStore {
                 && current_time - p.created_at <= (self.retention_seconds as i64)
         });
 
-        // Sort remaining posts by created_at timestamp
+        // 按 created_at 时间戳对剩余帖子排序
         posts.sort_unstable_by_key(|p| p.created_at);
 
         Self::insert_posts_internal(self, posts);
@@ -104,7 +104,7 @@ impl PostStore {
         self.sort_all_user_posts().await;
         self.trim_old_posts().await;
 
-        // This is needed because order of create_event/delete_event can be be lost in the feeder
+        // 这是必需的，因为 create_event/delete_event 的顺序可能在 feeder 中丢失
         for entry in self.deleted_posts.iter() {
             self.posts.remove(entry.key());
         }
@@ -123,17 +123,17 @@ impl PostStore {
                 continue;
             }
 
-            // Store the full post data
+            // 存储完整的帖子数据
             let old = self.posts.insert(post_id, post);
             if old.is_some() {
-                // if already stored - don't add it again
+                // 如果已存储 - 不再添加
                 continue;
             }
 
-            // Create a TinyPost reference for the timeline
+            // 为时间线创建 TinyPost 引用
             let tiny_post = TinyPost::new(post_id, created_at);
 
-            // Use entry API to get mutable access to the appropriate user's posts timeline
+            // 使用 entry API 获取对相应用户帖子时间线的可变访问
             if is_original {
                 let mut user_posts_entry =
                     self.original_posts_by_user.entry(author_id).or_default();
@@ -146,7 +146,7 @@ impl PostStore {
 
             let mut video_eligible = post.has_video;
 
-            // If this is a retweet and the retweeted post has video, mark has_video as true
+            // 如果这是转推且被转推的帖子有视频，则将 has_video 标记为 true
             if !video_eligible
                 && post.is_retweet
                 && let Some(source_post_id) = post.source_post_id
@@ -159,7 +159,7 @@ impl PostStore {
                 video_eligible = false;
             }
 
-            // Also add to video posts timeline if post has video
+            // 如果帖子有视频，也添加到视频帖子时间线
             if video_eligible {
                 let mut user_posts_entry = self.video_posts_by_user.entry(author_id).or_default();
                 user_posts_entry.push_back(tiny_post);
@@ -167,7 +167,7 @@ impl PostStore {
         }
     }
 
-    /// Retrieves video posts from multiple users
+    /// 从多个用户检索视频帖子
     pub fn get_videos_by_users(
         &self,
         user_ids: &[i64],
@@ -189,7 +189,7 @@ impl PostStore {
         video_posts
     }
 
-    /// Retrieves all posts from multiple users
+    /// 从多个用户检索所有帖子
     pub fn get_all_posts_by_users(
         &self,
         user_ids: &[i64],
@@ -261,17 +261,16 @@ impl PostStore {
                 let user_posts = user_posts_ref.value();
                 total_eligible += user_posts.len();
 
-                // Start from newest posts (reverse iterator)
-                // Take a capped number to prevent from going all the way back to when user is inactive
+                // 从最新帖子开始（反向迭代器）
+                // 取一个上限数字以防止一直追溯到用户不活跃的时候
                 let tiny_posts_iter = user_posts
                     .iter()
                     .rev()
                     .filter(|post| !exclude_tweet_ids.contains(&post.post_id))
                     .take(MAX_TINY_POSTS_PER_USER_SCAN);
 
-                // Perform light doc lookup to get full LightPost data. This will also filter deleted posts
-                // Note: We copy the value immediately to release the read lock and avoid potential
-                // deadlock when acquiring nested read locks while a writer is waiting.
+                // 执行轻量文档查找以获取完整的 LightPost 数据。这也会过滤已删除的帖子
+                // 注意：我们立即复制值以释放读锁，避免在写入者等待时获取嵌套读锁可能导致死锁
                 let light_post_iter_1 = tiny_posts_iter
                     .filter_map(|tiny_post| self.posts.get(&tiny_post.post_id).map(|r| *r.value()));
 
@@ -318,7 +317,7 @@ impl PostStore {
             }
         }
 
-        // Track ratio of returned posts to eligible posts
+        // 跟踪返回帖子与符合条件的帖子的比率
         if total_eligible > 0 {
             let ratio = light_posts.len() as f64 / total_eligible as f64;
             POST_STORE_POSTS_RETURNED_RATIO.observe(ratio);
@@ -327,7 +326,7 @@ impl PostStore {
         light_posts
     }
 
-    /// Start a background task that periodically logs PostStore statistics
+    /// 启动后台任务，定期记录 PostStore 统计信息
     pub fn start_stats_logger(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(5));
@@ -339,7 +338,7 @@ impl PostStore {
                 let total_posts = self.posts.len();
                 let deleted_posts = self.deleted_posts.len();
 
-                // Sum up all VecDeque sizes for each map
+                // 对每个映射的所有 VecDeque 大小求和
                 let original_posts_count: usize = self
                     .original_posts_by_user
                     .iter()
@@ -356,12 +355,12 @@ impl PostStore {
                     .map(|entry| entry.value().len())
                     .sum();
 
-                // Update Prometheus gauges
+                // 更新 Prometheus 指标
                 POST_STORE_USER_COUNT.set(user_count as f64);
                 POST_STORE_TOTAL_POSTS.set(total_posts as f64);
                 POST_STORE_DELETED_POSTS.set(deleted_posts as f64);
 
-                // Update entity count gauge with labels
+                // 使用标签更新实体计数指标
                 POST_STORE_ENTITY_COUNT
                     .with_label_values(&["users"])
                     .set(user_count as f64);
@@ -389,7 +388,7 @@ impl PostStore {
         });
     }
 
-    /// Start a background task that periodically trims old posts
+    /// 启动后台任务，定期修剪旧帖子
     pub fn start_auto_trim(self: Arc<Self>, interval_minutes: u64) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(interval_minutes * 60));
@@ -404,8 +403,8 @@ impl PostStore {
         });
     }
 
-    /// Manually trim posts older than retention period from all users
-    /// Returns the number of posts trimmed
+    /// 手动修剪所有用户中超过保留期的帖子
+    /// 返回修剪的帖子数量
     pub async fn trim_old_posts(&self) -> usize {
         let posts_map = Arc::clone(&self.posts);
         let original_posts_by_user = Arc::clone(&self.original_posts_by_user);
@@ -422,7 +421,7 @@ impl PostStore {
 
             let mut total_trimmed = 0;
 
-            // Helper closure to trim posts from a given map
+            // 用于从给定映射中修剪帖子的辅助闭包
             let trim_map = |posts_by_user: &DashMap<i64, VecDeque<TinyPost>>,
                             posts_map: &DashMap<i64, LightPost>,
                             deleted_posts: &DashMap<i64, bool>|
@@ -475,28 +474,28 @@ impl PostStore {
         .expect("spawn_blocking failed")
     }
 
-    /// Sorts all user post lists by creation time (newest first)
+    /// 按创建时间对所有用户帖子列表排序（最新的在前）
     pub async fn sort_all_user_posts(&self) {
         let original_posts_by_user = Arc::clone(&self.original_posts_by_user);
         let secondary_posts_by_user = Arc::clone(&self.secondary_posts_by_user);
         let video_posts_by_user = Arc::clone(&self.video_posts_by_user);
 
         tokio::task::spawn_blocking(move || {
-            // Sort original posts
+            // 排序原始帖子
             for mut entry in original_posts_by_user.iter_mut() {
                 let user_posts = entry.value_mut();
                 user_posts
                     .make_contiguous()
                     .sort_unstable_by_key(|a| a.created_at);
             }
-            // Sort secondary posts
+            // 排序次要帖子
             for mut entry in secondary_posts_by_user.iter_mut() {
                 let user_posts = entry.value_mut();
                 user_posts
                     .make_contiguous()
                     .sort_unstable_by_key(|a| a.created_at);
             }
-            // Sort video posts
+            // 排序视频帖子
             for mut entry in video_posts_by_user.iter_mut() {
                 let user_posts = entry.value_mut();
                 user_posts
@@ -508,7 +507,7 @@ impl PostStore {
         .expect("spawn_blocking failed");
     }
 
-    /// Clears all posts from the store
+    /// 清除存储中的所有帖子
     pub fn clear(&self) {
         self.posts.clear();
         self.original_posts_by_user.clear();
@@ -520,7 +519,7 @@ impl PostStore {
 
 impl Default for PostStore {
     fn default() -> Self {
-        // Default to 2 days retention, no timeout
+        // 默认保留期为 2 天，无超时
         Self::new(2 * 24 * 60 * 60, 0)
     }
 }

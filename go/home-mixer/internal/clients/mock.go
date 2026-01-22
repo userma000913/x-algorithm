@@ -1,10 +1,10 @@
 package clients
 
 import (
-	"github.com/x-algorithm/go/home-mixer/internal/hydrators"
-	"github.com/x-algorithm/go/home-mixer/internal/query_hydrators"
-	"github.com/x-algorithm/go/home-mixer/internal/side_effects"
-	"github.com/x-algorithm/go/home-mixer/internal/sources"
+	"x-algorithm-go/home-mixer/internal/hydrators"
+	"x-algorithm-go/home-mixer/internal/query_hydrators"
+	"x-algorithm-go/home-mixer/internal/side_effects"
+	"x-algorithm-go/home-mixer/internal/sources"
 )
 
 // NewMockThunderClient creates a mock Thunder client for local testing

@@ -5,8 +5,8 @@ use crate::util::candidates_util::get_related_post_ids;
 use tonic::async_trait;
 use xai_candidate_pipeline::filter::{Filter, FilterResult};
 
-/// Filter out previously seen posts using a Bloom Filter and
-/// the seen IDs sent in the request directly from the client
+/// 使用布隆过滤器和客户端请求中直接发送的已见ID
+/// 来过滤掉之前已见过的帖子
 pub struct PreviouslySeenPostsFilter;
 
 #[async_trait]

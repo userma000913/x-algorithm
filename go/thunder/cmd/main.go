@@ -14,90 +14,90 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/x-algorithm/go/thunder/internal/kafka"
-	"github.com/x-algorithm/go/thunder/internal/metrics"
-	"github.com/x-algorithm/go/thunder/internal/poststore"
-	"github.com/x-algorithm/go/thunder/internal/service"
-	"github.com/x-algorithm/go/thunder/internal/strato"
-	"github.com/x-algorithm/go/pkg/proto/thunder"
+	"x-algorithm-go/thunder/internal/kafka"
+	"x-algorithm-go/thunder/internal/metrics"
+	"x-algorithm-go/thunder/internal/poststore"
+	"x-algorithm-go/thunder/internal/service"
+	"x-algorithm-go/thunder/internal/strato"
+	"x-algorithm-go/proto/thunder"
 	"google.golang.org/grpc"
 )
 
 var (
-	grpcPort              = flag.Int("grpc_port", 50052, "gRPC server port (default: 50052, different from Home Mixer)")
-	httpPort              = flag.Int("http_port", 8080, "HTTP server port")
-	postRetentionSeconds  = flag.Uint64("post_retention_seconds", 2*24*60*60, "Post retention period in seconds (default: 2 days)")
-	requestTimeoutMs      = flag.Uint64("request_timeout_ms", 0, "Request timeout in milliseconds (0 = no timeout)")
-	maxConcurrentRequests = flag.Int64("max_concurrent_requests", 100, "Maximum concurrent requests")
-	kafkaBatchSize       = flag.Int("kafka_batch_size", 100, "Kafka batch size")
-	isServing            = flag.Bool("is_serving", true, "Whether to start in serving mode")
-	enableProfiling      = flag.Bool("enable_profiling", false, "Enable profiling")
+	grpcPort              = flag.Int("grpc_port", 50052, "gRPC 服务器端口（默认: 50052，与 Home Mixer 不同）")
+	httpPort              = flag.Int("http_port", 8080, "HTTP 服务器端口")
+	postRetentionSeconds  = flag.Uint64("post_retention_seconds", 2*24*60*60, "帖子保留期（秒，默认: 2 天）")
+	requestTimeoutMs      = flag.Uint64("request_timeout_ms", 0, "请求超时（毫秒，0 = 无超时）")
+	maxConcurrentRequests = flag.Int64("max_concurrent_requests", 100, "最大并发请求数")
+	kafkaBatchSize       = flag.Int("kafka_batch_size", 100, "Kafka 批次大小")
+	isServing            = flag.Bool("is_serving", true, "是否以服务模式启动")
+	enableProfiling      = flag.Bool("enable_profiling", false, "启用性能分析")
 	
-	// Kafka configuration
-	kafkaBrokers          = flag.String("kafka_brokers", "localhost:9092", "Kafka broker addresses (comma-separated)")
-	kafkaTopic            = flag.String("kafka_topic", "tweet_events", "Kafka topic name")
-	kafkaGroupID          = flag.String("kafka_group_id", "thunder", "Kafka consumer group ID")
-	kafkaPartitions       = flag.String("kafka_partitions", "", "Kafka partitions to consume (comma-separated, empty = all)")
-	kafkaNumThreads       = flag.Int("kafka_num_threads", 1, "Number of Kafka processing threads")
-	kafkaLagMonitorSecs   = flag.Int("kafka_lag_monitor_secs", 60, "Partition lag monitor interval in seconds")
-	kafkaSkipToLatest     = flag.Bool("kafka_skip_to_latest", false, "Skip to latest offset on startup")
+	// Kafka 配置
+	kafkaBrokers          = flag.String("kafka_brokers", "localhost:9092", "Kafka 代理地址（逗号分隔）")
+	kafkaTopic            = flag.String("kafka_topic", "tweet_events", "Kafka 主题名称")
+	kafkaGroupID          = flag.String("kafka_group_id", "thunder", "Kafka 消费者组 ID")
+	kafkaPartitions       = flag.String("kafka_partitions", "", "要消费的 Kafka 分区（逗号分隔，空 = 全部）")
+	kafkaNumThreads       = flag.Int("kafka_num_threads", 1, "Kafka 处理线程数")
+	kafkaLagMonitorSecs   = flag.Int("kafka_lag_monitor_secs", 60, "分区延迟监控间隔（秒）")
+	kafkaSkipToLatest     = flag.Bool("kafka_skip_to_latest", false, "启动时跳转到最新偏移量")
 	
-	// SSL/SASL configuration
-	kafkaSecurityProtocol = flag.String("kafka_security_protocol", "", "Kafka security protocol (SSL, SASL_PLAINTEXT, etc.)")
-	kafkaSASLMechanism    = flag.String("kafka_sasl_mechanism", "", "Kafka SASL mechanism")
-	kafkaSASLUsername      = flag.String("kafka_sasl_username", "", "Kafka SASL username")
-	kafkaSASLPassword      = flag.String("kafka_sasl_password", "", "Kafka SASL password")
+	// SSL/SASL 配置
+	kafkaSecurityProtocol = flag.String("kafka_security_protocol", "", "Kafka 安全协议（SSL、SASL_PLAINTEXT 等）")
+	kafkaSASLMechanism    = flag.String("kafka_sasl_mechanism", "", "Kafka SASL 机制")
+	kafkaSASLUsername      = flag.String("kafka_sasl_username", "", "Kafka SASL 用户名")
+	kafkaSASLPassword      = flag.String("kafka_sasl_password", "", "Kafka SASL 密码")
 )
 
 func main() {
 	flag.Parse()
 
-	log.Printf("Starting Thunder service with gRPC port: %d, HTTP port: %d, retention: %d seconds (%.1f days), request_timeout: %dms",
+	log.Printf("启动 Thunder 服务，gRPC 端口: %d，HTTP 端口: %d，保留期: %d 秒 (%.1f 天)，请求超时: %d 毫秒",
 		*grpcPort, *httpPort, *postRetentionSeconds,
 		float64(*postRetentionSeconds)/86400.0, *requestTimeoutMs)
 
-	// Initialize PostStore
+	// 初始化 PostStore
 	postStore := poststore.NewPostStore(*postRetentionSeconds, *requestTimeoutMs)
-	log.Printf("Initialized PostStore for in-memory post storage (retention: %d seconds / %.1f days, request_timeout: %dms)",
+	log.Printf("已初始化 PostStore 用于内存帖子存储（保留期: %d 秒 / %.1f 天，请求超时: %d 毫秒）",
 		*postRetentionSeconds, float64(*postRetentionSeconds)/86400.0, *requestTimeoutMs)
 
-	// Initialize StratoClient
+	// 初始化 StratoClient
 	stratoClient := strato.NewStratoClient()
 
-	// Create ThunderService
+	// 创建 ThunderService
 	thunderService := service.NewThunderService(postStore, stratoClient, *maxConcurrentRequests)
-	log.Printf("Initialized ThunderService with max_concurrent_requests=%d", *maxConcurrentRequests)
+	log.Printf("已初始化 ThunderService，最大并发请求数=%d", *maxConcurrentRequests)
 
-	// Create gRPC server
+	// 创建 gRPC 服务器
 	grpcServer := grpc.NewServer()
 
-	// Start gRPC server
+	// 启动 gRPC 服务器
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
 	if err != nil {
-		log.Fatalf("Failed to listen on port %d: %v", *grpcPort, err)
+		log.Fatalf("监听端口 %d 失败: %v", *grpcPort, err)
 	}
 
-	// Register the service
+	// 注册服务
 	thunder.RegisterInNetworkPostsServiceServer(grpcServer, thunderService)
 
 	go func() {
-		log.Printf("gRPC server listening on port %d", *grpcPort)
+		log.Printf("gRPC 服务器监听端口 %d", *grpcPort)
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve gRPC server: %v", err)
+			log.Fatalf("启动 gRPC 服务器失败: %v", err)
 		}
 	}()
 
-	// Initialize metrics
+	// 初始化指标
 	metrics.InitMetrics()
 
-	// Start HTTP server for health checks and metrics
+	// 启动 HTTP 服务器用于健康检查和指标
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 	httpMux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Expose Prometheus metrics
+		// TODO: 暴露 Prometheus 指标
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("# Metrics endpoint - Prometheus integration pending\n"))
 	})
@@ -108,18 +108,18 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("HTTP server listening on port %d", *httpPort)
+		log.Printf("HTTP 服务器监听端口 %d", *httpPort)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start HTTP server: %v", err)
+			log.Fatalf("启动 HTTP 服务器失败: %v", err)
 		}
 	}()
 
-	// Initialize Kafka listener if in serving mode
+	// 如果在服务模式下，初始化 Kafka 监听器
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if *isServing {
-		// Parse Kafka partitions
+		// 解析 Kafka 分区
 		var partitions []int32
 		if *kafkaPartitions != "" {
 			parts := strings.Split(*kafkaPartitions, ",")
@@ -130,13 +130,13 @@ func main() {
 			}
 		}
 
-		// Parse Kafka brokers
+		// 解析 Kafka 代理
 		brokers := strings.Split(*kafkaBrokers, ",")
 		for i := range brokers {
 			brokers[i] = strings.TrimSpace(brokers[i])
 		}
 
-		// Create Kafka config
+		// 创建 Kafka 配置
 		kafkaConfig := kafka.KafkaConfig{
 			Brokers:                brokers,
 			Topic:                  *kafkaTopic,
@@ -152,7 +152,7 @@ func main() {
 			SASLPassword:           *kafkaSASLPassword,
 		}
 
-		// Start Kafka processing
+		// 启动 Kafka 处理
 		catchupChan := make(chan int64, *kafkaNumThreads)
 		go func() {
 			if err := kafka.StartKafka(
@@ -166,44 +166,44 @@ func main() {
 				*kafkaBatchSize,
 				*kafkaLagMonitorSecs,
 			); err != nil {
-				log.Printf("Kafka processing error: %v", err)
+				log.Printf("Kafka 处理错误: %v", err)
 			}
 		}()
 
-		// Finalize initialization
+		// 完成初始化
 		if err := postStore.FinalizeInit(context.Background()); err != nil {
-			log.Printf("Failed to finalize PostStore initialization: %v", err)
+			log.Printf("完成 PostStore 初始化失败: %v", err)
 		}
 
-		// Start auto-trim task
-		postStore.StartAutoTrim(context.Background(), 2) // Run every 2 minutes
-		log.Printf("Started PostStore auto-trim task (interval: 2 minutes, retention: %.1f days)",
+		// 启动自动清理任务
+		postStore.StartAutoTrim(context.Background(), 2) // 每 2 分钟运行一次
+		log.Printf("已启动 PostStore 自动清理任务（间隔: 2 分钟，保留期: %.1f 天）",
 			float64(*postRetentionSeconds)/86400.0)
 
-		// Start stats logger
+		// 启动统计日志记录器
 		postStore.StartStatsLogger(context.Background())
-		log.Println("Started PostStore stats logger")
+		log.Println("已启动 PostStore 统计日志记录器")
 	}
 
-	// Wait for interrupt signal
+	// 等待中断信号
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	log.Println("Thunder service is ready")
+	log.Println("Thunder 服务已就绪")
 	<-sigChan
 
-	log.Println("Shutting down Thunder service...")
+	log.Println("正在关闭 Thunder 服务...")
 	
-	// Graceful shutdown
+	// 优雅关闭
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 
-	cancel() // Cancel Kafka context
+	cancel() // 取消 Kafka 上下文
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Error shutting down HTTP server: %v", err)
+		log.Printf("关闭 HTTP 服务器时出错: %v", err)
 	}
 
 	grpcServer.GracefulStop()
-	log.Println("Thunder service shutdown complete")
+	log.Println("Thunder 服务关闭完成")
 }

@@ -3,7 +3,7 @@ package hydrators
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
+	"x-algorithm-go/candidate-pipeline/pipeline"
 )
 
 // SubscriptionHydrator 增强候选的订阅状态信息

@@ -12,46 +12,46 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/x-algorithm/go/home-mixer/internal/clients"
-	"github.com/x-algorithm/go/home-mixer/internal/mixer"
+	"x-algorithm-go/home-mixer/internal/clients"
+	"x-algorithm-go/home-mixer/internal/mixer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	// 这里假设 proto 生成的代码在 pkg/proto 包中
+	// 这里假设 proto 生成的代码在 proto 包中
 	// 实际使用时需要先运行 protoc 生成代码
-	pb "github.com/x-algorithm/go/pkg/proto"
+	pb "x-algorithm-go/proto"
 )
 
 var (
-	grpcPort     = flag.Int("grpc_port", 50051, "gRPC server port")
-	metricsPort  = flag.Int("metrics_port", 9090, "HTTP metrics server port")
+	grpcPort     = flag.Int("grpc_port", 50051, "gRPC 服务器端口")
+	metricsPort  = flag.Int("metrics_port", 9090, "HTTP 指标服务器端口")
 	
-	// Service addresses
-	thunderAddr         = flag.String("thunder_addr", "localhost:50052", "Thunder service address")
-	phoenixRetrievalAddr = flag.String("phoenix_retrieval_addr", "localhost:50053", "Phoenix Retrieval service address")
-	phoenixRankingAddr   = flag.String("phoenix_ranking_addr", "localhost:50054", "Phoenix Ranking service address")
-	tesAddr             = flag.String("tes_addr", "localhost:50055", "TES service address")
-	gizmoduckAddr       = flag.String("gizmoduck_addr", "localhost:50056", "Gizmoduck service address")
-	stratoAddr          = flag.String("strato_addr", "localhost:50057", "Strato service address")
-	uasAddr             = flag.String("uas_addr", "localhost:50058", "UAS service address")
-	vfAddr              = flag.String("vf_addr", "localhost:50059", "VF service address")
+	// 服务地址
+	thunderAddr         = flag.String("thunder_addr", "localhost:50052", "Thunder 服务地址")
+	phoenixRetrievalAddr = flag.String("phoenix_retrieval_addr", "localhost:50053", "Phoenix 检索服务地址")
+	phoenixRankingAddr   = flag.String("phoenix_ranking_addr", "localhost:50054", "Phoenix 排序服务地址")
+	tesAddr             = flag.String("tes_addr", "localhost:50055", "TES 服务地址")
+	gizmoduckAddr       = flag.String("gizmoduck_addr", "localhost:50056", "Gizmoduck 服务地址")
+	stratoAddr          = flag.String("strato_addr", "localhost:50057", "Strato 服务地址")
+	uasAddr             = flag.String("uas_addr", "localhost:50058", "UAS 服务地址")
+	vfAddr              = flag.String("vf_addr", "localhost:50059", "VF 服务地址")
 )
 
 func main() {
 	flag.Parse()
 
-	log.Printf("Starting Home Mixer server with gRPC port: %d, metrics port: %d", *grpcPort, *metricsPort)
+	log.Printf("启动 Home Mixer 服务器，gRPC 端口: %d，指标端口: %d", *grpcPort, *metricsPort)
 
 	// 1) 初始化客户端
 	thunderClient, err := clients.NewThunderClient(*thunderAddr)
 	if err != nil {
-		log.Fatalf("Failed to create Thunder client: %v", err)
+		log.Fatalf("创建 Thunder 客户端失败: %v", err)
 	}
 	defer thunderClient.(*clients.ThunderClientImpl).Close()
 
 	phoenixRetrievalClient, err := clients.NewPhoenixRetrievalClient(*phoenixRetrievalAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create Phoenix Retrieval client: %v", err)
+		log.Printf("警告: 创建 Phoenix 检索客户端失败: %v", err)
 		phoenixRetrievalClient = nil
 	}
 	if phoenixRetrievalClient != nil {
@@ -60,7 +60,7 @@ func main() {
 
 	tesClient, err := clients.NewTESClient(*tesAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create TES client: %v", err)
+		log.Printf("警告: 创建 TES 客户端失败: %v", err)
 		tesClient = nil
 	}
 	if tesClient != nil {
@@ -69,7 +69,7 @@ func main() {
 
 	gizmoduckClient, err := clients.NewGizmoduckClient(*gizmoduckAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create Gizmoduck client: %v", err)
+		log.Printf("警告: 创建 Gizmoduck 客户端失败: %v", err)
 		gizmoduckClient = nil
 	}
 	if gizmoduckClient != nil {
@@ -78,7 +78,7 @@ func main() {
 
 	stratoClient, err := clients.NewStratoClient(*stratoAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create Strato client: %v", err)
+		log.Printf("警告: 创建 Strato 客户端失败: %v", err)
 		stratoClient = nil
 	}
 	if stratoClient != nil {
@@ -87,7 +87,7 @@ func main() {
 
 	uasFetcher, err := clients.NewUASFetcher(*uasAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create UAS fetcher: %v", err)
+		log.Printf("警告: 创建 UAS 获取器失败: %v", err)
 		uasFetcher = nil
 	}
 	if uasFetcher != nil {
@@ -96,7 +96,7 @@ func main() {
 
 	vfClient, err := clients.NewVFClient(*vfAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create VF client: %v", err)
+		log.Printf("警告: 创建 VF 客户端失败: %v", err)
 		vfClient = nil
 	}
 	if vfClient != nil {
@@ -105,7 +105,7 @@ func main() {
 
 	stratoClientForCache, err := clients.NewStratoClientForCache(*stratoAddr)
 	if err != nil {
-		log.Printf("Warning: Failed to create Strato client for cache: %v", err)
+		log.Printf("警告: 创建用于缓存的 Strato 客户端失败: %v", err)
 		stratoClientForCache = nil
 	}
 	if stratoClientForCache != nil {
@@ -134,12 +134,12 @@ func main() {
 	// 4) 创建 gRPC 服务器
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("监听失败: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
 
-	// 5) 启用 gRPC reflection (for development)
+	// 5) 启用 gRPC 反射（用于开发）
 	reflection.Register(grpcServer)
 
 	// 6) 创建服务实现
@@ -165,17 +165,17 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("HTTP server listening on port %d", *metricsPort)
+		log.Printf("HTTP 服务器监听端口 %d", *metricsPort)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start HTTP server: %v", err)
+			log.Fatalf("启动 HTTP 服务器失败: %v", err)
 		}
 	}()
 
 	// 9) 启动 gRPC 服务器（在 goroutine 中）
 	go func() {
-		log.Printf("gRPC server listening on :%d", *grpcPort)
+		log.Printf("gRPC 服务器监听端口 :%d", *grpcPort)
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			log.Fatalf("服务启动失败: %v", err)
 		}
 	}()
 
@@ -189,7 +189,7 @@ func waitForShutdown(grpcServer *grpc.Server, httpServer *http.Server) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	log.Println("正在关闭服务器...")
 
 	// 创建超时上下文
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -197,7 +197,7 @@ func waitForShutdown(grpcServer *grpc.Server, httpServer *http.Server) {
 
 	// 优雅关闭 HTTP 服务器
 	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Printf("Error shutting down HTTP server: %v", err)
+		log.Printf("关闭 HTTP 服务器时出错: %v", err)
 	}
 
 	// 优雅关闭 gRPC 服务器
@@ -210,9 +210,9 @@ func waitForShutdown(grpcServer *grpc.Server, httpServer *http.Server) {
 	// 等待关闭完成或超时
 	select {
 	case <-stopped:
-		log.Println("Server stopped gracefully")
+		log.Println("服务器已优雅关闭")
 	case <-ctx.Done():
-		log.Println("Server shutdown timeout, forcing stop")
+		log.Println("服务器关闭超时，强制停止")
 		grpcServer.Stop()
 	}
 }

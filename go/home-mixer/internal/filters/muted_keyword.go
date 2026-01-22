@@ -3,8 +3,8 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/utils"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/utils"
 )
 
 // MutedKeywordFilter 移除包含用户静音关键词的帖子

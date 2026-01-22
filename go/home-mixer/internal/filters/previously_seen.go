@@ -3,8 +3,8 @@ package filters
 import (
 	"context"
 
-	"github.com/x-algorithm/go/candidate-pipeline/pipeline"
-	"github.com/x-algorithm/go/home-mixer/internal/utils"
+	"x-algorithm-go/candidate-pipeline/pipeline"
+	"x-algorithm-go/home-mixer/internal/utils"
 )
 
 // PreviouslySeenPostsFilter 移除用户已经看过的帖子
